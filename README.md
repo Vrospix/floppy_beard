@@ -14,7 +14,7 @@ A **Flappy Bird clone game** built using **JavaScript** and **Phaser 3**. Guide 
 
 - **JavaScript (ES6)**  
 - **Phaser 3** for game engine and physics  
-- HTML/CSS for displaying the game canvas  
+- HTML for displaying the game canvas  
 
 ## How to Play
 
