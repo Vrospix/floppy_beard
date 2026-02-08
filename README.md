@@ -27,7 +27,7 @@ A **Flappy Bird clone game** built using **JavaScript** and **Phaser 3**. Guide 
 6. If you crash, press **space** to restart.  
 
 ### Option B
-1. Visit Vrospix.github.io/floppy_beard/index.html
+1. Visit [Vrospix.github.io/floppy_beard/index.html](Vrospix.github.io/floppy_beard/index.html).
 2. Play and have fun! :D
 
 ## Setup
