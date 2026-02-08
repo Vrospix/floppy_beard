@@ -22,16 +22,20 @@ function preload() {
     this.load.image("background", "assets/background.png");
     this.load.image("road", "assets/road.png");
     this.load.image("column", "assets/column.png");
-    this.load.spritesheet("bird", "assets/bird.png", {
-        frameWidth: 64,
-        frameHeight: 96,
-    });
+    this.load.image("oribird", "assets/bird.png");
+    for (let i = 0; i <= 10; i++) {
+        this.load.image(`bird${i}`, `assets/png/bird${i}.png`);
+    }
 }
 
 //Set up variables
 let bird;
 let topColumns;
 let bottomColumns;
+const TOP_MIN_Y = 250;   
+const TOP_MAX_Y = 350;
+const GAP_VARIATION = 0;
+const PIPE_GAP = 100 + Phaser.Math.Between(-GAP_VARIATION, GAP_VARIATION);
 
 let hasLanded = false;
 let hasBumped = false;
@@ -59,12 +63,14 @@ function create() {
     
     // Generate columns
     for (let i = 0; i < 3; i++) {
-        const top = this.topColumns.create(400 + i * 400, 0, 'column');
-        top.setOrigin(0.5, 0.6);
+        let topY = Phaser.Math.Between(TOP_MIN_Y, TOP_MAX_Y);
+
+        const top = this.topColumns.create(400 + i * 400, topY, 'column');
+        top.setOrigin(0.5, 1);
         top.passed = false;
 
-        const bottom = this.bottomColumns.create(400 + i * 400, 400, 'column');
-        bottom.setOrigin(0.5, 0.2);
+        const bottom = this.bottomColumns.create(400 + i * 400, topY + PIPE_GAP, 'column');
+        bottom.setOrigin(0.5, 0);
     }
 
     // Create the roads on the bottom parts
@@ -72,7 +78,19 @@ function create() {
     const road = roads.create(400, 568, "road").setScale(2).refreshBody();
     
     // Assign bird as a physics sprite
-    bird = this.physics.add.sprite(0, 100, 'bird').setScale(2);
+    const birdFrames = [];
+    for (let i = 0; i <= 10; i++) {
+        birdFrames.push({ key: `bird${i}` });
+    }
+
+    this.anims.create({
+        key: 'flap',
+        frames: birdFrames,
+        frameRate: 10,
+        repeat: -1
+    });
+    bird = this.physics.add.sprite(0, 100, 'bird0').setScale(0.20); 
+    bird.play('flap');
     bird.setBounce(0.2);
     bird.setCollideWorldBounds(true); // Limit the bird to bounce on edge of frame
     
@@ -134,6 +152,7 @@ function update() {
         bird.body.velocity.x = 0;
         this.topColumns.setVelocityX(0);
         this.bottomColumns.setVelocityX(0);
+        bird.anims.pause();
     }
 
     // Change display message if landed/bumped
@@ -147,9 +166,12 @@ function update() {
     // Set up game to only start after space input
     if (!isGameStarted) {
         bird.setVelocityY(0);
+        bird.body.allowGravity = false;
     }
     if (cursors.space.isDown && !isGameStarted) {
         isGameStarted = true;
+        bird.body.allowGravity = true;
+        bird.anims.play('flap');
         messageToPlayer.text = 'Instructions: Press the "space" button to stay upright\nAnd don\'t hit the columns or ground';
     } 
 
@@ -169,7 +191,9 @@ function update() {
 
         this.topColumns.children.iterate(col => {
             if (col.x < -col.width) {
+                let topY = Phaser.Math.Between(TOP_MIN_Y, TOP_MAX_Y);
                 col.x = screenWidth + 370;
+                col.y = topY;
                 col.passed = false;
                 col.body.updateFromGameObject();
             }
@@ -182,11 +206,11 @@ function update() {
             }
         });
 
-        this.bottomColumns.children.iterate(col => {
-            if (col.x < -col.width) {
-                col.x = screenWidth + 370;
-                col.body.updateFromGameObject();
-            }
+        this.bottomColumns.children.iterate((col, i) => {
+            let topCol = this.topColumns.getChildren()[i];
+            col.x = topCol.x;
+            col.y = topCol.y + PIPE_GAP;
+            col.body.updateFromGameObject();
         });
     }
 }
@@ -204,13 +228,17 @@ function resetGame(scene) {
 
     // Reset columns
     scene.topColumns.children.iterate((col, i) => {
+        const topY = Phaser.Math.Between(TOP_MIN_Y, TOP_MAX_Y);
         col.x = 400 + i * 400;
+        col.y = topY;
         col.body.updateFromGameObject();
         col.passed = false;
     });
 
     scene.bottomColumns.children.iterate((col, i) => {
-        col.x = 400 + i * 400;
+        const topCol = scene.topColumns.getChildren()[i];
+        col.x = topCol.x;
+        col.y = topCol.y + PIPE_GAP;
         col.body.updateFromGameObject();
     });
 
